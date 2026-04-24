@@ -125,8 +125,8 @@ const OTP_MAX_ATTEMPTS = 3;
 let _otpData = null; // { code, email, expiresAt, attempts }
 
 // EmailJS Config — User must replace these after signing up at emailjs.com
-const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';  // e.g. 'service_abc123'
-const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID'; // e.g. 'template_xyz789'
+const EMAILJS_SERVICE_ID = 'service_ecmqtvl';
+const EMAILJS_TEMPLATE_ID = 'template_rjklnic';
 
 async function sendOtpEmail(email) {
   initCloud();
