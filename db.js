@@ -39,21 +39,20 @@ function removeCustomCat(name){
   setCustomCats(cc);
 }
 
-/* ===== Cloud Backend Services (Firebase) ===== */
-let fbApp, fbAuth, fbDb;
+/* ===== Cloud Backend Services (Firebase Compat) ===== */
+let fbAuth, fbDb;
 let isCloudInitialized = false;
 
 function initCloud() {
-  if (isCloudInitialized || !window.FB_initializeApp) return;
+  if (isCloudInitialized) return;
+  if (typeof firebase === 'undefined') return;
   try {
-    // Note: To make this work in production, replace window.firebaseConfig with real Firebase project keys
-    fbApp = window.FB_initializeApp(window.firebaseConfig);
-    fbAuth = window.FB_getAuth(fbApp);
-    fbDb = window.FB_getFirestore(fbApp);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
     isCloudInitialized = true;
     
-    // Listen for auth changes
-    window.FB_onAuthStateChanged(fbAuth, async (user) => {
+    // Listen for auth state changes
+    fbAuth.onAuthStateChanged(async (user) => {
       if (user) {
         setCurUser({ id: user.uid, email: user.email, name: user.displayName || user.email.split('@')[0] });
         syncDataFromCloud(user.uid);
@@ -72,17 +71,17 @@ function setCurUser(u){DB.s('kd_cur',u)}
 
 async function registerUser(n, e, phone, p){
   initCloud();
-  if(!isCloudInitialized) return {ok:false, msg:'Backend not configured'};
+  if(!isCloudInitialized) return {ok:false, msg:'Backend not configured. Check Firebase setup.'};
   try {
-    const cred = await window.FB_createUserWithEmailAndPassword(fbAuth, e, p);
+    const cred = await fbAuth.createUserWithEmailAndPassword(e, p);
     const u = {id: cred.user.uid, name: n, email: e, phone: phone};
     setCurUser(u);
-    // Initialize empty firestore doc
-    await window.FB_setDoc(window.FB_doc(fbDb, "users", u.id), { name: n, email: e, phone: phone, createdAt: new Date().toISOString() });
+    // Initialize firestore doc
+    await fbDb.collection("users").doc(u.id).set({ name: n, email: e, phone: phone, createdAt: new Date().toISOString() });
     
     // Save phone mapping for login
     if (phone) {
-      await window.FB_setDoc(window.FB_doc(fbDb, "userMappings", phone), { email: e });
+      await fbDb.collection("userMappings").doc(phone).set({ email: e });
     }
     return {ok:true, user:u};
   } catch (err) {
@@ -92,18 +91,18 @@ async function registerUser(n, e, phone, p){
 
 async function loginUser(u, p){
   initCloud();
-  if(!isCloudInitialized) return {ok:false, msg:'Backend not configured'};
+  if(!isCloudInitialized) return {ok:false, msg:'Backend not configured. Check Firebase setup.'};
   try {
     let emailToUse = u;
-    // If not an email, lookup in userMappings (Phone or Username login)
+    // If not an email, lookup in userMappings (Phone login)
     if (!u.includes('@')) {
-      const mapSnap = await window.FB_getDoc(window.FB_doc(fbDb, "userMappings", u));
-      if (mapSnap.exists()) {
+      const mapSnap = await fbDb.collection("userMappings").doc(u).get();
+      if (mapSnap.exists) {
         emailToUse = mapSnap.data().email;
       }
     }
     
-    const cred = await window.FB_signInWithEmailAndPassword(fbAuth, emailToUse, p);
+    const cred = await fbAuth.signInWithEmailAndPassword(emailToUse, p);
     const userObj = {id: cred.user.uid, email: cred.user.email, name: cred.user.displayName || u};
     setCurUser(userObj);
     await syncDataFromCloud(cred.user.uid);
@@ -114,21 +113,21 @@ async function loginUser(u, p){
 }
 
 function logout(){
-  if(fbAuth) window.FB_signOut(fbAuth);
+  if(fbAuth) fbAuth.signOut();
   localStorage.removeItem('kd_cur');
   showScreen('loginScreen');
   toast('Logged out','info');
 }
 
-/* OTP & Forgot Password (Mock simulated OTP on top of Firebase Link) */
+/* OTP & Forgot Password (Simulated OTP on top of Firebase reset link) */
 let _mockOtp = null;
 async function sendOtpEmail(email) {
   initCloud();
   if(!isCloudInitialized) return {ok:false, msg:'Backend not configured'};
   try {
-    // Send actual Firebase secure reset link just in case
-    await window.FB_sendPasswordResetEmail(fbAuth, email);
-    // Simulate OTP for UI requirements
+    // Send actual Firebase secure reset link
+    await fbAuth.sendPasswordResetEmail(email);
+    // Simulate OTP for the UI
     _mockOtp = Math.floor(100000 + Math.random() * 900000).toString();
     console.log(`[SECURE MOCK] OTP for ${email} is: ${_mockOtp}`);
     return {ok:true};
@@ -143,9 +142,6 @@ function validateOtp(email, code) {
 }
 
 async function resetPasswordWithMockOtp(email, newPass) {
-  // Since Firebase Client SDK does not allow direct password resets without the old password
-  // or a clicked email link, we will simulate the success for the demo UI, but 
-  // the user must click the real link sent to their email to actually change it.
   return {ok:true};
 }
 
@@ -156,9 +152,8 @@ async function syncDataFromCloud(userId) {
   if(ind) ind.innerHTML = '<i class="ri-loader-4-line ri-spin" style="color:var(--accent)"></i>';
   
   try {
-    const docRef = window.FB_doc(fbDb, "users", userId);
-    const docSnap = await window.FB_getDoc(docRef);
-    if(docSnap.exists()) {
+    const docSnap = await fbDb.collection("users").doc(userId).get();
+    if(docSnap.exists) {
       const data = docSnap.data();
       if(data.customCats) DB.s(uk('customCats'), data.customCats);
       if(data.staff) DB.s(uk('staff'), data.staff);
@@ -193,7 +188,7 @@ async function saveToCloud(userId) {
       cfwd: getAdjustments(),
       lastUpdated: new Date().toISOString()
     };
-    await window.FB_setDoc(window.FB_doc(fbDb, "users", userId), payload, { merge: true });
+    await fbDb.collection("users").doc(userId).set(payload, { merge: true });
   } catch (e) {
     console.error("Cloud save failed", e);
   } finally {

@@ -12,13 +12,12 @@
   <link href="https://cdn.jsdelivr.net/npm/remixicon@4.1.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
-    <!-- Firebase SDKs -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, confirmPasswordReset } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-      import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-      // Real Firebase Config
+    <!-- Firebase SDKs (compat version — loads synchronously before db.js) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script>
+      // Initialize Firebase immediately (synchronous)
       const firebaseConfig = {
         apiKey: "AIzaSyDBTSPwg9zjafpMhgWl2YBAVNiWMblihcI",
         authDomain: "expense-tracker-app-bd72d.firebaseapp.com",
@@ -28,22 +27,7 @@
         appId: "1:595558807310:web:c8f0020bf7ea4c4181495f",
         measurementId: "G-4WPHBDMQTM"
       };
-
-      // We attach Firebase to window to use in our legacy script
-      window.firebaseConfig = firebaseConfig;
-      window.FB_initializeApp = initializeApp;
-      window.FB_getAuth = getAuth;
-      window.FB_signInWithEmailAndPassword = signInWithEmailAndPassword;
-      window.FB_createUserWithEmailAndPassword = createUserWithEmailAndPassword;
-      window.FB_onAuthStateChanged = onAuthStateChanged;
-      window.FB_signOut = signOut;
-      window.FB_sendPasswordResetEmail = sendPasswordResetEmail;
-      window.FB_confirmPasswordReset = confirmPasswordReset;
-      window.FB_getFirestore = getFirestore;
-      window.FB_doc = doc;
-      window.FB_setDoc = setDoc;
-      window.FB_getDoc = getDoc;
-      window.FB_onSnapshot = onSnapshot;
+      firebase.initializeApp(firebaseConfig);
     </script>
   </head>
 <body>
