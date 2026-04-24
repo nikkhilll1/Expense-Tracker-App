@@ -132,6 +132,16 @@ async function loginUser(u, p){
 function logout(){
   if(fbAuth) fbAuth.signOut();
   localStorage.removeItem('kd_cur');
+  
+  // Clear all auth form inputs for a fresh start
+  ['loginForm','regForm','forgotPwForm','otpForm'].forEach(id => {
+    const f = document.getElementById(id);
+    if(f) f.reset();
+  });
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('otpCode').value = '';
+  
   showScreen('loginScreen');
   toast('Logged out','info');
 }
