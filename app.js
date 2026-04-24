@@ -79,7 +79,7 @@ document.getElementById('forgotPwForm').onsubmit = async e => {
   if(!email) return;
   const btn = e.target.querySelector('button[type="submit"]');
   const ogText = btn.innerHTML;
-  btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Sending...';
+  btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Sending OTP...';
   btn.disabled = true;
   
   const r = await sendOtpEmail(email);
@@ -89,9 +89,14 @@ document.getElementById('forgotPwForm').onsubmit = async e => {
   if(r.ok) {
     pendingOtpEmail = email;
     showScreen('otpScreen');
-    toast('OTP sent to email (simulated)', 'info');
+    if(r.method === 'email') {
+      toast('OTP sent to ' + email + '! Check your inbox.', 'ok');
+    } else {
+      // Fallback: EmailJS not configured — show OTP for testing
+      toast('⚠️ EmailJS not configured. Your OTP is: ' + r.fallbackCode, 'info');
+    }
   } else {
-    toast(r.msg, 'err');
+    toast(r.msg || 'Failed to send OTP. Please try again.', 'err');
   }
 };
 

@@ -16,6 +16,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <!-- EmailJS SDK for sending OTP emails -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script>
       // Initialize Firebase immediately (synchronous)
       const firebaseConfig = {
@@ -28,6 +30,10 @@
         measurementId: "G-4WPHBDMQTM"
       };
       firebase.initializeApp(firebaseConfig);
+
+      // Initialize EmailJS — Replace with your EmailJS public key
+      // Sign up free at https://www.emailjs.com and get your keys
+      (function(){ emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); })();
     </script>
   </head>
 <body>
