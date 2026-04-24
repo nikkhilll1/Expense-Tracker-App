@@ -1,24 +1,35 @@
 const admin = require('firebase-admin');
 
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // Replace literal \n with actual newlines to support Vercel environment variables
-        privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
-      })
-    });
-  } catch (error) {
-    console.error('Firebase admin initialization error', error.stack);
-  }
-}
-
 export default async function handler(req, res) {
-  // CORS setup if needed, but since it's same-origin on Vercel it should be fine.
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  // Ensure Firebase Admin is initialized
+  try {
+    if (!admin.apps.length) {
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+      if (!projectId || !clientEmail || !privateKey || privateKey === 'undefined') {
+        return res.status(500).json({ error: 'Missing Environment Variables: Please ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set in your Vercel Dashboard.' });
+      }
+      
+      // Fix formatting issues: replace literal \n with actual newlines, remove surrounding quotes
+      privateKey = privateKey.replace(/\\n/g, '\n').replace(/^"|"$/g, '');
+
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        })
+      });
+    }
+  } catch (error) {
+    console.error('Firebase admin init error:', error);
+    return res.status(500).json({ error: 'Firebase Init Error: ' + error.message });
   }
 
   try {
