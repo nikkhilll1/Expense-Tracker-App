@@ -72,6 +72,7 @@ document.getElementById('regForm').onsubmit = async e => {
 
 /* OTP & Password Reset Flow */
 let pendingOtpEmail = '';
+let otpTimerInterval = null;
 
 document.getElementById('forgotPwForm').onsubmit = async e => {
   e.preventDefault();
@@ -88,43 +89,103 @@ document.getElementById('forgotPwForm').onsubmit = async e => {
   
   if(r.ok) {
     pendingOtpEmail = email;
+    resetOtpScreen();
     showScreen('otpScreen');
+    document.getElementById('otpSubtext').textContent = 'Code sent to ' + email;
+    startOtpTimer();
     if(r.method === 'email') {
       toast('OTP sent to ' + email + '! Check your inbox.', 'ok');
     } else {
-      // Fallback: EmailJS not configured — show OTP for testing
-      toast('⚠️ EmailJS not configured. Your OTP is: ' + r.fallbackCode, 'info');
+      toast('⚠️ EmailJS not configured. OTP: ' + r.fallbackCode, 'info');
     }
   } else {
-    toast(r.msg || 'Failed to send OTP. Please try again.', 'err');
+    toast(r.msg || 'Failed to send OTP. Try again.', 'err');
   }
 };
 
+function resetOtpScreen() {
+  document.getElementById('otpCode').value = '';
+  document.getElementById('otpCode').disabled = false;
+  document.getElementById('otpStep1').style.display = 'flex';
+  document.getElementById('otpForm').style.display = 'none';
+  document.getElementById('btnVerifyOtp').disabled = false;
+  document.getElementById('btnVerifyOtp').innerHTML = '<i class="ri-check-double-line"></i> Verify OTP';
+}
+
+function startOtpTimer() {
+  if(otpTimerInterval) clearInterval(otpTimerInterval);
+  let seconds = 600; // 10 minutes
+  const el = document.getElementById('otpCountdown');
+  const timerDiv = document.getElementById('otpTimer');
+  timerDiv.classList.remove('expired');
+  
+  otpTimerInterval = setInterval(() => {
+    seconds--;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    el.textContent = 'Code expires in ' + m + ':' + (s < 10 ? '0' : '') + s;
+    if(seconds <= 0) {
+      clearInterval(otpTimerInterval);
+      el.textContent = 'Code expired! Request a new one.';
+      timerDiv.classList.add('expired');
+    }
+  }, 1000);
+}
+
 function verifyOTP() {
   const code = document.getElementById('otpCode').value.trim();
-  if(code.length !== 6) {
-    toast('Enter valid 6-digit OTP', 'err');
+  if(code.length !== 6 || !/^\d{6}$/.test(code)) {
+    toast('Enter a valid 6-digit code', 'err');
     return;
   }
+  const btn = document.getElementById('btnVerifyOtp');
+  btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Verifying...';
+  btn.disabled = true;
+  
   const r = validateOtp(pendingOtpEmail, code);
   if(r.ok) {
-    toast('OTP Verified! Enter new password.', 'ok');
-    document.getElementById('otpCode').disabled = true;
-    document.getElementById('btnVerifyOtp').style.display = 'none';
-    document.getElementById('newPwField').style.display = 'flex';
-    document.getElementById('btnResetPw').style.display = 'flex';
+    if(otpTimerInterval) clearInterval(otpTimerInterval);
+    toast('Email verified! Set your new password.', 'ok');
+    // Hide step 1, show step 2
+    document.getElementById('otpStep1').style.display = 'none';
+    document.getElementById('otpForm').style.display = 'flex';
   } else {
+    btn.innerHTML = '<i class="ri-check-double-line"></i> Verify OTP';
+    btn.disabled = false;
     toast(r.msg, 'err');
+  }
+}
+
+async function resendOTP() {
+  if(!pendingOtpEmail) { toast('No email set. Go back and try again.', 'err'); return; }
+  const btn = document.getElementById('btnResendOtp');
+  btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Resending...';
+  btn.disabled = true;
+  
+  const r = await sendOtpEmail(pendingOtpEmail);
+  btn.innerHTML = '<i class="ri-refresh-line"></i> Resend Code';
+  btn.disabled = false;
+  
+  if(r.ok) {
+    document.getElementById('otpCode').value = '';
+    startOtpTimer();
+    if(r.method === 'email') {
+      toast('New OTP sent to ' + pendingOtpEmail, 'ok');
+    } else {
+      toast('New OTP: ' + r.fallbackCode, 'info');
+    }
+  } else {
+    toast(r.msg || 'Failed to resend. Try again.', 'err');
   }
 }
 
 document.getElementById('otpForm').onsubmit = async e => {
   e.preventDefault();
   const newPass = document.getElementById('resetNewPass').value;
-  if(newPass.length < 6) {
-    toast('Password must be at least 6 chars', 'err');
-    return;
-  }
+  const confirmPass = document.getElementById('resetConfirmPass').value;
+  
+  if(newPass.length < 6) { toast('Password must be at least 6 characters', 'err'); return; }
+  if(newPass !== confirmPass) { toast('Passwords do not match!', 'err'); return; }
   
   const btn = document.getElementById('btnResetPw');
   const ogText = btn.innerHTML;
@@ -132,17 +193,11 @@ document.getElementById('otpForm').onsubmit = async e => {
   btn.disabled = true;
   
   const r = await resetPasswordWithMockOtp(pendingOtpEmail, newPass);
-  
   btn.innerHTML = ogText;
   btn.disabled = false;
   
   if(r.ok) {
-    toast('Password updated! Please login.', 'ok');
-    document.getElementById('otpForm').reset();
-    document.getElementById('otpCode').disabled = false;
-    document.getElementById('btnVerifyOtp').style.display = 'flex';
-    document.getElementById('newPwField').style.display = 'none';
-    document.getElementById('btnResetPw').style.display = 'none';
+    toast('Password updated! Check your email for the reset link to finalize.', 'ok');
     showScreen('loginScreen');
   } else {
     toast(r.msg, 'err');

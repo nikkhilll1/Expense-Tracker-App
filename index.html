@@ -82,15 +82,15 @@
       <div id="forgotPwScreen" class="screen">
         <div class="login-wrap">
           <div class="login-brand">
-            <div class="brand-icon" style="background:linear-gradient(135deg,var(--orange),var(--red))"><i class="ri-lock-unlock-line"></i></div>
+            <div class="brand-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"><i class="ri-lock-unlock-line"></i></div>
             <h1>Reset Password</h1>
-            <p>Enter your email to receive an OTP</p>
+            <p>We'll send a verification code to your email</p>
           </div>
           <form class="auth-form" id="forgotPwForm">
-            <div class="field"><i class="ri-mail-line"></i><input type="email" id="forgotEmail" placeholder="Email Address" required></div>
-            <button type="submit" class="btn-main" style="background:linear-gradient(135deg,var(--orange),#e65100)"><i class="ri-send-plane-fill"></i> Send OTP</button>
+            <div class="field"><i class="ri-mail-line"></i><input type="email" id="forgotEmail" placeholder="Enter your registered email" required></div>
+            <button type="submit" class="btn-main" style="background:linear-gradient(135deg,#f59e0b,#e65100)"><i class="ri-send-plane-fill"></i> Send OTP Code</button>
           </form>
-          <div class="auth-link"><a onclick="showScreen('loginScreen')"><i class="ri-arrow-left-line"></i> Back to Login</a></div>
+          <div class="auth-link" style="margin-top:12px"><a onclick="showScreen('loginScreen')"><i class="ri-arrow-left-line"></i> Back to Login</a></div>
         </div>
       </div>
 
@@ -98,21 +98,32 @@
       <div id="otpScreen" class="screen">
         <div class="login-wrap">
           <div class="login-brand">
-            <div class="brand-icon" style="background:linear-gradient(135deg,var(--green),var(--blue))"><i class="ri-shield-keyhole-line"></i></div>
-            <h1>Verify OTP</h1>
-            <p>Enter the 6-digit code sent to your email</p>
+            <div class="brand-icon" style="background:linear-gradient(135deg,#10b981,#3b82f6)"><i class="ri-shield-check-line"></i></div>
+            <h1>Verify Code</h1>
+            <p id="otpSubtext">Enter the 6-digit OTP sent to your email</p>
           </div>
-          <form class="auth-form" id="otpForm">
-            <div class="field"><i class="ri-number-1"></i><input type="number" id="otpCode" placeholder="Enter 6-digit OTP" required max="999999"></div>
-            <div class="field" id="newPwField" style="display:none">
-              <i class="ri-lock-password-line"></i>
-              <div style="position:relative;flex:1"><input type="password" id="resetNewPass" placeholder="New Password" required></div>
-              <button type="button" class="eye" onclick="togglePw('resetNewPass',this)"><i class="ri-eye-off-line"></i></button>
+
+          <!-- Step 1: OTP Entry -->
+          <div id="otpStep1" class="auth-form">
+            <div class="otp-input-wrap">
+              <input type="text" id="otpCode" class="otp-big-input" maxlength="6" placeholder="• • • • • •" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
             </div>
-            <button type="button" id="btnVerifyOtp" class="btn-main" style="background:linear-gradient(135deg,var(--green),#00bfa5)" onclick="verifyOTP()"><i class="ri-check-double-line"></i> Verify OTP</button>
-            <button type="submit" id="btnResetPw" class="btn-main" style="display:none"><i class="ri-save-line"></i> Save New Password</button>
+            <div class="otp-timer" id="otpTimer">
+              <i class="ri-time-line"></i> <span id="otpCountdown">Code expires in 10:00</span>
+            </div>
+            <button type="button" id="btnVerifyOtp" class="btn-main" style="background:linear-gradient(135deg,#10b981,#059669)" onclick="verifyOTP()"><i class="ri-check-double-line"></i> Verify OTP</button>
+            <button type="button" id="btnResendOtp" class="btn-resend" onclick="resendOTP()"><i class="ri-refresh-line"></i> Resend Code</button>
+          </div>
+
+          <!-- Step 2: New Password (shown after OTP verified) -->
+          <form class="auth-form" id="otpForm" style="display:none">
+            <div class="otp-success-badge"><i class="ri-checkbox-circle-fill"></i> Email Verified Successfully</div>
+            <div class="field"><i class="ri-lock-password-line"></i><input type="password" id="resetNewPass" placeholder="Enter new password (min 6)" required minlength="6"><button type="button" class="eye" onclick="togglePw('resetNewPass',this)"><i class="ri-eye-off-line"></i></button></div>
+            <div class="field"><i class="ri-lock-check-line"></i><input type="password" id="resetConfirmPass" placeholder="Confirm new password" required minlength="6"><button type="button" class="eye" onclick="togglePw('resetConfirmPass',this)"><i class="ri-eye-off-line"></i></button></div>
+            <button type="submit" id="btnResetPw" class="btn-main"><i class="ri-save-line"></i> Save New Password</button>
           </form>
-          <div class="auth-link"><a onclick="showScreen('loginScreen')">Cancel</a></div>
+
+          <div class="auth-link" style="margin-top:12px"><a onclick="showScreen('loginScreen')"><i class="ri-arrow-left-line"></i> Cancel & Back to Login</a></div>
         </div>
       </div>
 

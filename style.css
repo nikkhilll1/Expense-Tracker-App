@@ -57,6 +57,20 @@ img{max-width:100%}a{color:var(--accent2);text-decoration:none;cursor:pointer}
 .btn-main:active{transform:scale(.97)}
 .auth-link{text-align:center;color:var(--text3);font-size:.82rem;margin-top:6px}
 
+/* ===== OTP VERIFICATION UI ===== */
+.otp-input-wrap{display:flex;justify-content:center;margin:8px 0 4px}
+.otp-big-input{width:100%;max-width:280px;height:60px;font-size:2rem;font-weight:800;letter-spacing:14px;text-align:center;background:var(--surface);border:2px solid var(--border);border-radius:var(--r);color:var(--text);outline:none;font-family:var(--font);caret-color:var(--accent);transition:border-color .3s,box-shadow .3s}
+.otp-big-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(99,102,241,.15)}
+.otp-big-input::placeholder{font-size:1.4rem;letter-spacing:10px;color:var(--text3);opacity:.5}
+.otp-timer{text-align:center;font-size:.78rem;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:4px}
+.otp-timer i{font-size:.9rem}
+.otp-timer.expired{color:var(--red)}
+.btn-resend{width:100%;height:42px;border:1px solid var(--border);border-radius:var(--rs);background:transparent;color:var(--accent2);font-size:.82rem;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;margin-top:4px}
+.btn-resend:hover{background:var(--surface);border-color:var(--accent)}
+.btn-resend:active{transform:scale(.97)}
+.otp-success-badge{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:var(--rs);background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:var(--green);font-size:.88rem;font-weight:600;margin-bottom:6px}
+.otp-success-badge i{font-size:1.2rem}
+
 /* ===== TOPBAR ===== */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;height:var(--topH);background:var(--bg);position:sticky;top:0;z-index:50;border-bottom:1px solid var(--border)}
 .topbar-l{display:flex;align-items:center;gap:10px}

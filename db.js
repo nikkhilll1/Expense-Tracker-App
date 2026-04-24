@@ -69,6 +69,23 @@ function initCloud() {
 function curUser(){return DB.g('kd_cur')}
 function setCurUser(u){DB.s('kd_cur',u)}
 
+/* Friendly Firebase error messages */
+function friendlyAuthError(err) {
+  const code = err.code || '';
+  const map = {
+    'auth/invalid-credential': 'Incorrect email/phone or password. Please try again.',
+    'auth/user-not-found': 'No account found with this email. Please register first.',
+    'auth/wrong-password': 'Incorrect password. Try again or use Forgot Password.',
+    'auth/email-already-in-use': 'This email is already registered. Try logging in instead.',
+    'auth/weak-password': 'Password is too weak. Use at least 6 characters.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/too-many-requests': 'Too many failed attempts. Please wait a few minutes and try again.',
+    'auth/network-request-failed': 'Network error. Check your internet connection.',
+    'auth/user-disabled': 'This account has been disabled. Contact support.'
+  };
+  return map[code] || err.message.replace('Firebase: ', '');
+}
+
 async function registerUser(n, e, phone, p){
   initCloud();
   if(!isCloudInitialized) return {ok:false, msg:'Backend not configured. Check Firebase setup.'};
@@ -85,7 +102,7 @@ async function registerUser(n, e, phone, p){
     }
     return {ok:true, user:u};
   } catch (err) {
-    return {ok:false, msg: err.message.replace('Firebase: ','')};
+    return {ok:false, msg: friendlyAuthError(err)};
   }
 }
 
@@ -108,7 +125,7 @@ async function loginUser(u, p){
     await syncDataFromCloud(cred.user.uid);
     return {ok:true, user:userObj};
   } catch (err) {
-    return {ok:false, msg: err.message.replace('Firebase: ','')};
+    return {ok:false, msg: friendlyAuthError(err)};
   }
 }
 
