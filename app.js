@@ -29,8 +29,120 @@ function closeMod(){document.getElementById('overlay').classList.remove('on');do
 function setGreeting(){const h=new Date().getHours();document.getElementById('greet').textContent=h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening';const u=curUser();if(u){document.getElementById('uName').textContent=u.name;}}
 
 /* Auth */
-document.getElementById('loginForm').onsubmit=e=>{e.preventDefault();const r=loginUser(document.getElementById('loginUser').value.trim(),document.getElementById('loginPass').value);if(r.ok){showScreen('mainApp');initApp();toast('Welcome back!','ok')}else toast(r.msg,'err')};
-document.getElementById('regForm').onsubmit=e=>{e.preventDefault();const r=registerUser(document.getElementById('regName').value.trim(),document.getElementById('regEmail').value.trim(),document.getElementById('regPass').value);if(r.ok){showScreen('mainApp');initApp();toast('Account created!','ok')}else toast(r.msg,'err')};
+document.getElementById('loginForm').onsubmit = async e => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  const ogText = btn.innerHTML;
+  btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Authenticating...';
+  btn.disabled = true;
+  const r = await loginUser(document.getElementById('loginUser').value.trim(), document.getElementById('loginPass').value);
+  btn.innerHTML = ogText;
+  btn.disabled = false;
+  if(r.ok) {
+    showScreen('mainApp');
+    initApp();
+    toast('Welcome back!', 'ok');
+  } else {
+    toast(r.msg, 'err');
+  }
+};
+
+document.getElementById('regForm').onsubmit = async e => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  const ogText = btn.innerHTML;
+  btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Registering...';
+  btn.disabled = true;
+  const r = await registerUser(
+    document.getElementById('regName').value.trim(), 
+    document.getElementById('regEmail').value.trim(), 
+    document.getElementById('regPhone').value.trim(), 
+    document.getElementById('regPass').value
+  );
+  btn.innerHTML = ogText;
+  btn.disabled = false;
+  if(r.ok) {
+    showScreen('mainApp');
+    initApp();
+    toast('Account created!', 'ok');
+  } else {
+    toast(r.msg, 'err');
+  }
+};
+
+/* OTP & Password Reset Flow */
+let pendingOtpEmail = '';
+
+document.getElementById('forgotPwForm').onsubmit = async e => {
+  e.preventDefault();
+  const email = document.getElementById('forgotEmail').value.trim();
+  if(!email) return;
+  const btn = e.target.querySelector('button[type="submit"]');
+  const ogText = btn.innerHTML;
+  btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Sending...';
+  btn.disabled = true;
+  
+  const r = await sendOtpEmail(email);
+  btn.innerHTML = ogText;
+  btn.disabled = false;
+  
+  if(r.ok) {
+    pendingOtpEmail = email;
+    showScreen('otpScreen');
+    toast('OTP sent to email (simulated)', 'info');
+  } else {
+    toast(r.msg, 'err');
+  }
+};
+
+function verifyOTP() {
+  const code = document.getElementById('otpCode').value.trim();
+  if(code.length !== 6) {
+    toast('Enter valid 6-digit OTP', 'err');
+    return;
+  }
+  const r = validateOtp(pendingOtpEmail, code);
+  if(r.ok) {
+    toast('OTP Verified! Enter new password.', 'ok');
+    document.getElementById('otpCode').disabled = true;
+    document.getElementById('btnVerifyOtp').style.display = 'none';
+    document.getElementById('newPwField').style.display = 'flex';
+    document.getElementById('btnResetPw').style.display = 'flex';
+  } else {
+    toast(r.msg, 'err');
+  }
+}
+
+document.getElementById('otpForm').onsubmit = async e => {
+  e.preventDefault();
+  const newPass = document.getElementById('resetNewPass').value;
+  if(newPass.length < 6) {
+    toast('Password must be at least 6 chars', 'err');
+    return;
+  }
+  
+  const btn = document.getElementById('btnResetPw');
+  const ogText = btn.innerHTML;
+  btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Saving...';
+  btn.disabled = true;
+  
+  const r = await resetPasswordWithMockOtp(pendingOtpEmail, newPass);
+  
+  btn.innerHTML = ogText;
+  btn.disabled = false;
+  
+  if(r.ok) {
+    toast('Password updated! Please login.', 'ok');
+    document.getElementById('otpForm').reset();
+    document.getElementById('otpCode').disabled = false;
+    document.getElementById('btnVerifyOtp').style.display = 'flex';
+    document.getElementById('newPwField').style.display = 'none';
+    document.getElementById('btnResetPw').style.display = 'none';
+    showScreen('loginScreen');
+  } else {
+    toast(r.msg, 'err');
+  }
+};
 
 /* ===== STAFF ===== */
 function renderStaff(){

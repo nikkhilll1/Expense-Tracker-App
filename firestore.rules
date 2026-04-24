@@ -1,0 +1,24 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Users can only read and write their own private data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 2. User Mappings (Phone -> Email)
+    // Anyone can read this (required to map phone to email before logging in)
+    // Only authenticated users can write to it (during registration)
+    match /userMappings/{phoneNumber} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Secure default: Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
