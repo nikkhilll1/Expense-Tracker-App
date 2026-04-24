@@ -167,18 +167,20 @@ function renderStaff(){
   el.innerHTML=list.map(s=>{
     const adv=staffAdvTotal(s.id,CM);
     const salPaid=getMonthExpenses(CM).filter(e=>e.category==='Staff Salary'&&e.staffId===s.id).reduce((sum,e)=>sum+Number(e.amount),0);
+    const otherExp=getMonthExpenses(CM).filter(e=>e.category==='Staff Expense'&&e.staffId===s.id).reduce((sum,e)=>sum+Number(e.amount),0);
     const remaining=s.salary - salPaid - adv;
     return`<div class="stf" onclick="openStaffDet('${s.id}')">
       <div class="stf-av">${s.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
       <div class="stf-info">
         <div class="stf-name">${s.name}</div>
         <div class="stf-role">${s.role||'Staff'}</div>
-        <div class="stf-sal" style="font-size:0.8rem;color:var(--text2);margin-top:4px">Base: ${fmt(s.salary)}${salPaid?' • Paid: '+fmt(salPaid):''}${adv?' • Adv: '+fmt(adv):''}</div>
+        <div class="stf-sal" style="font-size:0.8rem;color:var(--text2);margin-top:4px">Base: ${fmt(s.salary)}${salPaid?' • Paid: '+fmt(salPaid):''}${adv?' • Adv: '+fmt(adv):''}${otherExp?' • Other: '+fmt(otherExp):''}</div>
         <div style="font-size:0.75rem;margin-top:2px;color:${remaining>0?'var(--orange)':'var(--green)'};font-weight:600">${remaining>0?'Remaining: '+fmt(remaining):'✓ Fully Paid'}</div>
       </div>
       <div class="li-acts" onclick="event.stopPropagation()">
         <button class="btn-adv" style="background:var(--blue-bg);color:var(--blue)" onclick="openSalMod('${s.id}')" title="Pay Salary"><i class="ri-wallet-3-line"></i></button>
         <button class="btn-adv" onclick="openAdvMod('${s.id}')" title="Give Advance"><i class="ri-hand-coin-line"></i></button>
+        <button class="btn-adv" style="background:var(--purple-bg);color:var(--purple)" onclick="openStaffExpMod('${s.id}')" title="Other Expense"><i class="ri-money-dollar-circle-line"></i></button>
         <button class="be" onclick="editStaff('${s.id}')"><i class="ri-pencil-line"></i></button>
         <button class="bd" onclick="delStaff('${s.id}')"><i class="ri-delete-bin-line"></i></button>
       </div>
@@ -269,6 +271,29 @@ function delAdv(aid,sid){
   if(!confirm('Delete transaction?'))return;
   setExpenses(getExpenses().filter(e=>e.id!==aid));
   toast('Deleted','ok');openStaffDet(sid);renderStaff();
+}
+
+/* Other Staff Expense */
+function openStaffExpMod(sid){
+  const s=getStaffList().find(x=>x.id===sid);if(!s)return;
+  document.getElementById('seStaffId').value=sid;
+  document.getElementById('mStaffExpT').textContent='Other Expense: '+s.name;
+  document.getElementById('fStaffExp').reset();
+  document.getElementById('seDate').value=todayStr();
+  openMod('mStaffExp');
+}
+function staffExpForm(e){
+  e.preventDefault();
+  const sid=document.getElementById('seStaffId').value;
+  const amt=Number(document.getElementById('seAmt').value),dt=document.getElementById('seDate').value;
+  if(!amt||amt<=0){toast('Enter amount','err');return}if(!dt){toast('Select date','err');return}
+  const staff=getStaffList().find(s=>s.id===sid);
+  const list=getExpenses();
+  const userNote = document.getElementById('seNote').value.trim();
+  list.push({id:DB.id(), category:'Staff Expense', amount:amt, date:dt, note:userNote?`Other Expense - ${userNote}`:`Other Expense: ${staff.name}`, staffId:sid});
+  setExpenses(list);
+  toast('Other expense of '+fmt(amt)+' recorded','ok');
+  closeMod();renderStaff();if(document.getElementById('mStaffDet').classList.contains('on'))openStaffDet(sid);
 }
 
 /* ===== EXPENSES — CATEGORY GRID ===== */
@@ -567,8 +592,39 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(savedT==='light'||(!savedT&&window.matchMedia('(prefers-color-scheme: light)').matches)){
     document.body.classList.add('light-theme');
   }
-  setTimeout(()=>{
-    const u=curUser();
-    if(u){showScreen('mainApp');initApp()}else showScreen('loginScreen');
-  }, 1200);
+  
+  // Use Firebase auth state listener for persistent login across devices
+  initCloud();
+  let authResolved = false;
+  
+  if (typeof firebase !== 'undefined' && fbAuth) {
+    fbAuth.onAuthStateChanged((user) => {
+      if (authResolved) return; // Only handle the first callback
+      authResolved = true;
+      if (user) {
+        setCurUser({ id: user.uid, email: user.email, name: user.displayName || user.email.split('@')[0] });
+        showScreen('mainApp');
+        initApp();
+        syncDataFromCloud(user.uid);
+      } else {
+        showScreen('loginScreen');
+      }
+    });
+    
+    // Fallback timeout in case Firebase is slow to respond
+    setTimeout(() => {
+      if (!authResolved) {
+        authResolved = true;
+        const u = curUser();
+        if (u) { showScreen('mainApp'); initApp(); }
+        else showScreen('loginScreen');
+      }
+    }, 3000);
+  } else {
+    // Fallback if Firebase not available
+    setTimeout(() => {
+      const u = curUser();
+      if(u){showScreen('mainApp');initApp()}else showScreen('loginScreen');
+    }, 1200);
+  }
 });

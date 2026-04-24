@@ -243,4 +243,30 @@ img{max-width:100%}a{color:var(--accent2);text-decoration:none;cursor:pointer}
 .light-theme .stf-av{color:#fff}
 .light-theme .sd-chip b.p{color:var(--green)}
 
+/* ===== RESPONSIVE & OVERFLOW FIXES ===== */
+/* Ensure login screens never overflow */
+.login-wrap{max-width:100%;overflow-x:hidden;overflow-y:auto}
+.auth-form{max-width:100%}
+.field input{min-width:0}
+
+/* Topbar responsive: prevent overflow on small screens */
+.topbar{flex-wrap:nowrap;overflow:hidden;gap:4px}
+.topbar-r{flex-shrink:1;min-width:0;overflow:hidden}
+
+/* Staff action buttons: wrap on small screens */
+.stf{flex-wrap:wrap}
+.stf .li-acts{flex-wrap:wrap;gap:4px;justify-content:flex-end;margin-top:4px}
+
+/* Loading spinner */
+@keyframes ri-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.ri-spin{animation:ri-spin 1s linear infinite;display:inline-block}
+
+@media(max-width:360px){
+  .topbar{padding:8px 10px}
+  .month-badge{font-size:.6rem;min-width:50px}
+  .ib{width:30px;height:30px;font-size:.95rem}
+  .month-nav button{width:20px;height:20px;font-size:.95rem}
+  .stf .li-acts button,.stf .li-acts .btn-adv{width:28px;height:28px;font-size:.8rem}
+}
+
 @media(min-width:431px){body{background:#050508}#app{border-left:1px solid var(--border);border-right:1px solid var(--border)}}
