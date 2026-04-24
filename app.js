@@ -26,7 +26,7 @@ function togglePw(id,b){const i=document.getElementById(id);const p=i.type==='pa
 function toast(m,t='info'){const e=document.getElementById('toast');e.textContent=m;e.className='toast show '+t;setTimeout(()=>e.className='toast',2500)}
 function openMod(id){document.getElementById('overlay').classList.add('on');document.getElementById(id).classList.add('on')}
 function closeMod(){document.getElementById('overlay').classList.remove('on');document.querySelectorAll('.modal').forEach(m=>m.classList.remove('on'))}
-function setGreeting(){const h=new Date().getHours();document.getElementById('greet').textContent=h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening';const u=curUser();if(u){document.getElementById('uName').textContent=u.name;}}
+function setGreeting(){const h=new Date().getHours();document.getElementById('greet').textContent=h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening';const u=curUser();if(u){let n=u.name||'';if(n.includes('@'))n=n.split('@')[0];n=n.split(' ')[0];n=n.charAt(0).toUpperCase()+n.slice(1);document.getElementById('uName').textContent=n;}}
 
 /* Auth */
 document.getElementById('loginForm').onsubmit = async e => {
