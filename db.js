@@ -122,7 +122,7 @@ async function loginUser(u, p){
     const cred = await fbAuth.signInWithEmailAndPassword(emailToUse, p);
     const userObj = {id: cred.user.uid, email: cred.user.email, name: cred.user.displayName || u};
     setCurUser(userObj);
-    await syncDataFromCloud(cred.user.uid);
+    await setupRealtimeSync(cred.user.uid);
     return {ok:true, user:userObj};
   } catch (err) {
     return {ok:false, msg: friendlyAuthError(err)};
@@ -130,6 +130,7 @@ async function loginUser(u, p){
 }
 
 function logout(){
+  if(_unsubSync) { _unsubSync(); _unsubSync = null; }
   if(fbAuth) fbAuth.signOut();
   localStorage.removeItem('kd_cur');
   
@@ -228,40 +229,62 @@ function validateOtp(email, code) {
 }
 
 async function resetPasswordWithMockOtp(email, newPass) {
-  // Clear the OTP data after successful reset
   _otpData = null;
-  // The actual password reset happens via the Firebase reset link sent to their email.
-  // This confirms the OTP flow was successful in the UI.
-  return {ok:true};
-}
-
-/* Cloud Sync Functions */
-async function syncDataFromCloud(userId) {
-  if(!fbDb) return;
-  const ind = document.getElementById('cloudSyncIndicator');
-  if(ind) ind.innerHTML = '<i class="ri-loader-4-line ri-spin" style="color:var(--accent)"></i>';
   
   try {
-    const docSnap = await fbDb.collection("users").doc(userId).get();
-    if(docSnap.exists) {
-      const data = docSnap.data();
-      if(data.customCats) DB.s(uk('customCats'), data.customCats);
-      if(data.staff) DB.s(uk('staff'), data.staff);
-      if(data.exp) DB.s(uk('exp'), data.exp);
-      if(data.rev) DB.s(uk('rev'), data.rev);
-      if(data.cfwd) DB.s(uk('cfwd'), data.cfwd);
-      
-      // Re-render UI if logged in
-      if(document.getElementById('mainApp').classList.contains('active')) {
-        const actTab = document.querySelector('.bnav-i.active')?.dataset.t;
-        if(actTab) switchTab(actTab);
-      }
+    const response = await fetch('/api/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, newPass })
+    });
+    
+    const data = await response.json();
+    if (response.ok && data.success) {
+      return {ok: true};
+    } else {
+      return {ok: false, msg: data.error || 'Failed to update password via backend.'};
     }
-  } catch (e) {
-    console.error("Sync failed", e);
-  } finally {
-    if(ind) ind.innerHTML = '<i class="ri-cloud-line" style="color:var(--green)"></i>';
+  } catch(err) {
+    return {
+      ok: false, 
+      msg: "Backend unreachable. Note: This feature only works on the deployed Vercel site, not local server."
+    };
   }
+}
+
+let _unsubSync = null;
+
+function setupRealtimeSync(userId) {
+  return new Promise((resolve) => {
+    if(!fbDb) return resolve();
+    const ind = document.getElementById('cloudSyncIndicator');
+    if(ind) ind.innerHTML = '<i class="ri-loader-4-line ri-spin" style="color:var(--accent)"></i>';
+    
+    if(_unsubSync) { _unsubSync(); _unsubSync = null; }
+    
+    _unsubSync = fbDb.collection("users").doc(userId).onSnapshot((docSnap) => {
+      if(docSnap.exists) {
+        const data = docSnap.data();
+        if(data.customCats) DB.s(uk('customCats'), data.customCats);
+        if(data.staff) DB.s(uk('staff'), data.staff);
+        if(data.exp) DB.s(uk('exp'), data.exp);
+        if(data.rev) DB.s(uk('rev'), data.rev);
+        if(data.cfwd) DB.s(uk('cfwd'), data.cfwd);
+        
+        // Re-render UI if logged in
+        if(document.getElementById('mainApp').classList.contains('active')) {
+          const actTab = document.querySelector('.bnav-i.active')?.dataset.t;
+          if(actTab) switchTab(actTab);
+        }
+      }
+      if(ind) ind.innerHTML = '<i class="ri-cloud-line" style="color:var(--green)"></i>';
+      resolve(); // Resolve on first load
+    }, (err) => {
+      console.error("Realtime sync error", err);
+      if(ind) ind.innerHTML = '<i class="ri-cloud-off-line" style="color:var(--red)"></i>';
+      resolve();
+    });
+  });
 }
 
 async function saveToCloud(userId) {

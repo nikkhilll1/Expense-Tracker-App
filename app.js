@@ -658,14 +658,14 @@ window.addEventListener('DOMContentLoaded',()=>{
   let authResolved = false;
   
   if (typeof firebase !== 'undefined' && fbAuth) {
-    fbAuth.onAuthStateChanged((user) => {
+    fbAuth.onAuthStateChanged(async (user) => {
       if (authResolved) return; // Only handle the first callback
       authResolved = true;
       if (user) {
         setCurUser({ id: user.uid, email: user.email, name: user.displayName || user.email.split('@')[0] });
+        await setupRealtimeSync(user.uid);
         showScreen('mainApp');
         initApp();
-        syncDataFromCloud(user.uid);
       } else {
         showScreen('loginScreen');
       }
